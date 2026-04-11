@@ -7,6 +7,7 @@ from plotly import graph_objects as go
 from plotly import io
 import yfinance as yf
 import datahandler as dh
+import time
 
 # create flask app and specify webpack origins allowed to connect
 app = Flask(__name__)

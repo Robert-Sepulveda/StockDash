@@ -17,19 +17,26 @@ def bollingerBandPlot(closes,timeStamps,fig):
     fig.add_trace(go.Scatter(x=timeStamps,y=middle,line=dict(color='green'),name='BB Middle'))
 
 def getTicker(symbol):
+    lookup = yf.Search(symbol, max_results=1)
+    print("lookup: ")
+    print(lookup.all['quotes'])
     dat = yf.Ticker(symbol)
-    if(dat.get_info()['trailingPegRatio'] == None):
+    print(dat.get_info)
+    if(dat.get_info() == None):
         return 'error'
     return dat
 
 def getHistoricalData(dat,timeframe):
-    if timeframe in ['1mo','6mo','ytd','1y','5y','max']:
+    if timeframe in ['1mo','6mo','ytd','1y','5y']:
         step = '1d'
         data = dat.history(timeframe,step)
     elif timeframe in ['1d','5d']:
         step = '1m'
         data = dat.history(timeframe,step)
         data = pd.concat([data, dat.history(timeframe,step,prepost=True)])
+    elif timeframe == 'max':
+        step = '1mo'
+        data = dat.history(timeframe,step)
     else:
         return pd.DataFrame()
     
