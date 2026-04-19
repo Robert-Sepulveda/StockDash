@@ -1,45 +1,58 @@
-from dotenv import load_dotenv
 from flask import Flask, request, jsonify
 from flask_cors import CORS
-from flask_socketio import SocketIO, emit
-import os
-from plotly import graph_objects as go
-from plotly import io
-import yfinance as yf
 import datahandler as dh
-import time
+import yfinance as yf
+
 
 # create flask app and specify webpack origins allowed to connect
 app = Flask(__name__)
 cors = CORS(app, origins='*')
 
 # handle api requests for historical stock data
-@app.route("/api/historical",methods=['POST','GET'])
-def get_plot():
-    msg = request.get_json()
-    symbol = msg['symbol']
-    timeframe = msg['timeframe']
-    dat = dh.getTicker(symbol)
-    if(dat=='error'):
-        return jsonify({'error':'badSymbol'})
-    data = dh.getHistoricalData(dat,timeframe)
-    if(data.empty):
+@app.route("/api/historical/<ticker>")
+def getHistorical(ticker):
+    range = request.args.get("range","1mo")
+    interval = request.args.get("interval","1d")
+    symbol = dh.searchSymbolOrSimilar(ticker)
+    if not symbol:
+        app.logger.info('Could not find ticker or similar for: %s',ticker)
+        return jsonify({'error':'nullTicker'}),404
+    stock = yf.Ticker(symbol)
+    try:
+        data = dh.getHistoricalData(stock,range,interval)
+    except Exception as e:
+        app.logger.info(f"ERROR: getHistoricalData failed: {e}")
+        return jsonify({'error':'an unexpected error occured'}),500
+    if not data:
+        app.logger.info('no historical data could be retrieved for ticker: %s range: %s interval: %s',ticker, range, interval)
+        return jsonify({'error':'nullData'}),400
+    app.logger.info('processed request for ticker: %s range: %s interval: %s | response data set: %d rows',ticker,range,interval,len(data))
+    return jsonify(data)
+
+@app.route("/api/historical/<ticker>/latest")
+def getLatestHistorical(ticker):
+    symbol = dh.searchSymbolOrSimilar(ticker)
+    if not symbol:
+        app.logger.info('Could not find ticker or similar for: %s',ticker)
+        return jsonify([]),404
+    stock = yf.Ticker(symbol)
+    data = dh.getHistoricalData(stock,range)
+    if not data:
         print("bad time frame")
         return jsonify({'error':'badTimeframe'})
-    fig = go.Figure()
-    candleLegend = msg['symbol'] + " Market Data"
-    dh.candlePlot(data.index,data.Open,data.High,data.Low,data.Close,candleLegend,fig)
-    if(timeframe in ['6mo','ytd','1y']):
-        dh.bollingerBandPlot(data.Close,data.index,fig)
-    fig.update_layout(xaxis_rangeslider_visible=False, template='plotly_dark')
-    graphJSON = io.to_json(fig, pretty=True)
-    graphTitle = dat.info['shortName'] + " (" + msg['symbol'].upper() + ")"
-    jsonData = {'graphTitle':graphTitle,'graph':graphJSON,'timeframe':timeframe}
-    return jsonify(jsonData)
-        
-    
+    lastDataPoint = data.tail(1)
+    lastDataPoint["Date"] = lastDataPoint["Date"].astype(str)
+    return jsonify(lastDataPoint.to_dict(orient="records")[0])
+
+@app.route("/api/status",methods=['GET'])
+def status():
+    package = {'message':'api endpoint is active'}
+    return jsonify(package)
+
+@app.errorhandler(404)
+def not_found(error):
+    return jsonify({'message':'not found'}),404
 
 if __name__=="__main__":
-
     app.run(debug=True,port=8080)
     

@@ -1,0 +1,52 @@
+.app-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 20px;
+    padding: 20px;
+}
+
+.search-bar {
+    display: flex;
+    gap: 10px;
+}
+
+.search-bar input {
+    padding: 8px;
+    font-size: 16px;
+}
+
+.search-bar button {
+    padding: 8px 12px;
+    background-color: #4cad67;
+}
+.search-bar button:hover {
+    background-color: #55b56f;
+}
+
+.range-buttons {
+    display: flex;
+    gap: 10px;
+}
+
+.range-buttons button {
+    padding: 6px 10px;
+}
+.range-buttons button:hover{
+    border-color: #646cff;
+    color: #646cff;
+}
+.range-buttons button:focus,
+.range-buttons button:focus-visible {
+    outline: 4px auto -webkit-focus-ring-color;
+    background-color: #535bf2;
+}
+
+.chart-container {
+    overflow: visible; /*in case the chart overflows the container*/
+    display: flex;
+    justify-content: center;
+    width: 100%;
+}

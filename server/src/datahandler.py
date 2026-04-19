@@ -1,47 +1,38 @@
-from plotly import graph_objects as go
-import pandas as pd
-import talib
-import numpy as np
 import yfinance as yf
-from datetime import datetime
 
-def candlePlot(timeStamps,opens,highs,lows,closes,name,fig):
-    fig.add_trace(go.Candlestick(x=timeStamps,open=opens,high=highs,low=lows,close=closes, name=name))
+DAY_RANGES = ['1d','5d']
+MONTH_RANGES = ['1mo','6mo']
+YEAR_RANGES = ['ytd','1y','5y']
+DAY_INTERVALS = ['1m','2m','3m','5m','15m','30m','1h']
+MONTH_INTERVALS = ['1h', '4h', '1d', '1wk']
+YEAR_INTERVALS = ['1d','1wk','1mo','3mo']
 
-def bollingerBandPlot(closes,timeStamps,fig):
-    npcloses = np.array(closes)
-    upper, middle, lower = talib.BBANDS(npcloses,timeperiod=20,nbdevdn=2,matype=0)
+def searchSymbolOrSimilar(symbol):
+    data = yf.Search(symbol, max_results=1, news_count=8)
+    if not data.quotes:
+        return None
+    return data.quotes[0]['symbol']
 
-    fig.add_trace(go.Scatter(x=timeStamps,y=upper,line=dict(color='blue'),name='BB Upper'))
-    fig.add_trace(go.Scatter(x=timeStamps,y=lower,line=dict(color='lightblue'),name='BB Lower'))
-    fig.add_trace(go.Scatter(x=timeStamps,y=middle,line=dict(color='green'),name='BB Middle'))
-
-def getTicker(symbol):
-    lookup = yf.Search(symbol, max_results=1)
-    print("lookup: ")
-    print(lookup.all['quotes'])
-    dat = yf.Ticker(symbol)
-    print(dat.get_info)
-    if(dat.get_info() == None):
-        return 'error'
-    return dat
-
-def getHistoricalData(dat,timeframe):
-    if timeframe in ['1mo','6mo','ytd','1y','5y']:
-        step = '1d'
-        data = dat.history(timeframe,step)
-    elif timeframe in ['1d','5d']:
-        step = '1m'
-        data = dat.history(timeframe,step)
-        data = pd.concat([data, dat.history(timeframe,step,prepost=True)])
-    elif timeframe == 'max':
-        step = '1mo'
-        data = dat.history(timeframe,step)
-    else:
-        return pd.DataFrame()
-    
-    return data
-
+def getHistoricalData(dat,range, interval):
+    if range in DAY_RANGES and interval not in DAY_INTERVALS:
+        interval = '1m'
+    elif range in MONTH_RANGES and interval not in MONTH_INTERVALS:
+        interval = '1d'
+    elif range in YEAR_RANGES and interval not in YEAR_INTERVALS:
+        interval = '1d'
+    elif range == 'max' and interval != '1mo':
+        interval = '1mo'
+    try:
+        data = dat.history(range,interval,prepost=False)
+    except Exception as e:
+        raise e
+    data = data.drop(columns=["Dividends","Stock Splits"])
+    data = data.reset_index()
+    # sometimes datasets use the label Datetime instead of Date
+    data = data.rename(columns={"Datetime": "Date"})
+    data["Date"] = data["Date"].astype(str)
+    data = data.round(2)
+    return data.to_dict(orient='records')
 
 
 
