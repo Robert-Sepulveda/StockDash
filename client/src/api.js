@@ -1,5 +1,6 @@
-export async function fetchStock(symbol,range) {
-  const response = await fetch(`http://127.0.0.1:8080/api/historical/${symbol}?range=${range}`)
+export async function fetchStock(symbol,range,interval) {
+  console.log(symbol,range,interval)
+  const response = await fetch(`http://127.0.0.1:8080/api/historical/${symbol}?range=${range}&interval=${interval}`)
   console.log(response)
   return response.json()
 }

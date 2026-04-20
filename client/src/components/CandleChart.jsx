@@ -1,4 +1,5 @@
-import React from "react"
+import React from 'react'
+import {useMemo, useState, useEffect} from 'react'
 import {
   ChartCanvas,
   Chart,
@@ -19,61 +20,31 @@ const CandleChart = ({ data: initialData, range}) => {
     return <div>Sorry, cannot display any information at this time</div>
   }
   const xScaleProvider = discontinuousTimeScaleProvider.inputDateAccessor(d => d.date)
-  const {
-    data,
-    xScale,
-    xAccessor,
-    displayXAccessor,
-  } = React.useMemo(()=>xScaleProvider(initialData),[initialData])
+  const {data,xScale,xAccessor,displayXAccessor} = useMemo(()=>xScaleProvider(initialData),[initialData])
+  const [xExtentsState, setXExtentsState] = useState(()=>[
+    xAccessor(data[data.length - 1]),
+    xAccessor(data[0])
+  ])
+  useEffect(() => {
+    setXExtentsState([
+        xAccessor(data[data.length - 1]),
+        xAccessor(data[0])
+      ])
+  }, [data])
+
   const lastPriceClose = data[data.length-1].close
   const firstPriceClose = data[0].close
   const isPriceUp = lastPriceClose >= data[data.length-2].close
   const lastPriceColor = isPriceUp ? "#26a69a" : "#ef5350"
-  const showLastPrice = range === "1D"
-
-  const [xExtentsState, setXExtentsState] = React.useState(()=>[
-    xAccessor(data[data.length - 1]),
-    xAccessor(data[0])
-  ])
-
-  const zoomIn = () => {
-  setXExtentsState(prev => {
-    const [start, end] = prev;
-    const range = start - end;
-    const newRange = range * 0.7;
-
-    return [start, start - newRange];
-  });
-};
-
-const zoomOut = () => {
-  setXExtentsState(prev => {
-    const [start, end] = prev;
-    const range = start - end;
-    const newRange = range * 1.3;
-
-    return [start, start - newRange];
-  });
-};
-
-  React.useEffect(() => {
-  setXExtentsState([
-      xAccessor(data[data.length - 1]),
-      xAccessor(data[0])
-    ])
-  }, [data])
+  const showOpen = range === "1D"
+  const margins = {left:10,right:90,top:20,bottom:60}
 
   return (
     <ChartCanvas
       clamp={true}
       height={500}
       width={Math.min(1200, window.innerWidth)}
-      margin={{
-        left: 60,
-        right: 90,
-        top: 20,
-        bottom: 60
-      }}
+      margin={margins}
       ratio={1}
       data={data}
       seriesName="Stock"
@@ -82,10 +53,6 @@ const zoomOut = () => {
       displayXAccessor={displayXAccessor}
       xExtents={xExtentsState}
     >
-      <div style={{ position: "absolute", top: 10, right: 10 }}>
-        <button onClick={zoomIn}>+</button>
-        <button onClick={zoomOut}>−</button>
-      </div>
       <Chart id={1} yExtents={d => [d.high, d.low]}>
         <XAxis className="x-axis" strokeStyle="#1a1a1a" showTicks={false} tickLabelFill="white"/>
         <YAxis strokeStyle="#1a1a1a" showGridLines={true} gridLinesStrokeWidth={0.4} showTicks={false} ticks={5} tickLabelFill="white"/>
@@ -94,7 +61,7 @@ const zoomOut = () => {
         <MouseCoordinateY at="right" orient="right" dx={30} displayFormat={d => d.toFixed(2)}/>
         <EdgeIndicator itemType="last" orient="right" edgeAt="right" yAccessor={()=>lastPriceClose} fill={lastPriceColor} displayFormat={d=>d.toFixed(2)}/>
         <StraightLine lineDash={'ShortDash'} yValue={lastPriceClose} strokeStyle={lastPriceColor}/>
-        {showLastPrice && (
+        {showOpen && (
           <>
             <StraightLine lineDash={'ShortDash'} yValue={firstPriceClose} strokeStyle="gray"/>
             <EdgeIndicator itemType="last" yAccessor={()=>firstPriceClose}/>

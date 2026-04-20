@@ -3,8 +3,7 @@
     margin: 0 auto;
     display: flex;
     flex-direction: column;
-    align-items: center;
-    gap: 20px;
+    gap: 10px;
     padding: 20px;
 }
 
@@ -28,7 +27,6 @@
 
 .range-buttons {
     display: flex;
-    gap: 10px;
 }
 
 .range-buttons button {
@@ -42,6 +40,10 @@
 .range-buttons button:focus-visible {
     outline: 4px auto -webkit-focus-ring-color;
     background-color: #535bf2;
+}
+
+.interval-select {
+    padding: 6px 10px;
 }
 
 .chart-container {
